@@ -3,7 +3,6 @@ A tiny test graph with Book meta-data
 """
 
 import rdflib
-import StringIO
 
 bookrdf="""
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .

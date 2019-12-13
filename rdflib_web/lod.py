@@ -29,13 +29,12 @@ and servers content-negotiated HTML or serialised RDF from these.
 """
 import re
 import warnings
-import urllib2
+from urllib import request
 import collections
 import subprocess
 import codecs
 import os.path
 import itertools
-
 import rdflib
 
 from rdflib import RDF, RDFS
@@ -145,7 +144,7 @@ def resolve(r):
     if r==None:
         return { 'url': None, 'realurl': None, 'label': None }
     if isinstance(r, rdflib.Literal):
-        return { 'url': None, 'realurl': None, 'label': unicode(r), 'lang': r.language }
+        return { 'url': None, 'realurl': None, 'label': r.unicode(), 'lang': r.language }
 
     # if str(r)=='http://www.agroxml.de/rdf/vocabulary/workProcess#WorkProcess':
     #     asldkj
@@ -159,7 +158,7 @@ def resolve(r):
         for t in current_app.config["resource_types"][r]:
             if t in current_app.config["types"]:
                 try:
-                    l=current_app.config["resources"][t][r].decode("utf8")
+                    l=current_app.config["resources"][t][r]
                     localurl=url_for("lod.resource", type_=current_app.config["types"][t], label=l)
                     break
                 except KeyError: pass
@@ -171,7 +170,7 @@ def resolve(r):
              'realurl': r,
              'label': get_label(r),
              'type': types,
-             'picked': unicode(r) in session["picked"]}
+             'picked': str(r) in session["picked"]}
 
 def localname(t):
     """standard rdflib qname computer is not quite what we want"""
@@ -183,15 +182,14 @@ def localname(t):
     return r
 
 def _find_label(t, graph, label_props):
-    if isinstance(t, rdflib.Literal): return unicode(t)
+    if isinstance(t, rdflib.Literal):
+        return str(t)
     for l in label_props:
-        try:
-            return graph.objects(t,l).next()
-        except StopIteration:
-            pass
+        for n in graph.objects(t,l):
+            return n
     try:
         #return g.graph.namespace_manager.compute_qname(t)[2]
-        return urllib2.unquote(localname(t))
+        return request.unquote(localname(t))
     except:
         return t
 
@@ -201,7 +199,7 @@ def get_label(r):
         return current_app.config["labels"][r]
     except:
         try:
-            l=urllib2.unquote(localname(r))
+            l=request.unquote(localname(r))
         except:
             l=r
         current_app.config["labels"][r]=l
@@ -229,7 +227,8 @@ def _find_types(graph):
 def _reverse_types(types):
     """Generate cache of localname=>type mapping"""
     rtypes={}
-    for t,l in types.iteritems():
+    for t in types:
+        l =types[t]
         while l in rtypes:
             warnings.warn(u"Multiple types for label '%s': (%s) rewriting to '%s_'"%(l,rtypes[l], l))
             l+="_"
@@ -237,8 +236,8 @@ def _reverse_types(types):
 
     # rewrite type cache, in case we changed some labels
     types.clear()
-    for l,t in rtypes.iteritems():
-        types[t]=l
+    for l in rtypes:
+        types[rtypes[l]]=l
     return rtypes
 
 
@@ -265,9 +264,9 @@ def _reverse_resources(resources):
     (for finding resources when entering URL)
     """
     rresources={}
-    for t,res in resources.iteritems():
+    for t,res in resources.items():
         rresources[t]={}
-        for r, l in res.iteritems():
+        for r, l in res.items():
             while l in rresources[t]:
                 warnings.warn(u"Multiple resources for label '%s': (%s, %s) rewriting to '%s_'"%(repr(l),rresources[t][l], r, repr(l+'_')))
                 l+="_"
@@ -275,23 +274,21 @@ def _reverse_resources(resources):
             rresources[t][l]=r
 
         resources[t].clear()
-        for l,r in rresources[t].iteritems():
+        for l,r in rresources[t].items():
             resources[t][r]=l
 
     return rresources
 
 def _find_labels(graph, resources, label_props):
     labels={}
-    for t, res in resources.iteritems():
+    for t, res in resources.items():
         for r in res:
             if r not in labels:
                 labels[r]=_find_label(r, graph, label_props)
     return labels
 
 def _quote(l):
-    if isinstance(l,unicode):
-        l=l.encode("utf-8")
-    return l
+    return l.encode("utf-8")
     #return urllib2.quote(l, safe="")
 
 
@@ -415,7 +412,7 @@ def page(label, type_=None):
 
     inprops=sorted([ (resolve(x[0]), resolve(x[1])) for x in g.graph.subject_predicates(r) ])
 
-    picked=unicode(r) in session["picked"]
+    picked=str(r) in session["picked"]
 
     params={ "outprops":outprops,
              "inprops":inprops,

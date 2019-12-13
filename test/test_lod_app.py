@@ -1,7 +1,7 @@
 import threading
 import time
-from httplib import HTTPConnection
-
+from http.client import HTTPConnection
+import requests
 import rdflib
 import rdflib_web.lod as lod
 from rdflib_web.bookdb import bookdb
@@ -38,3 +38,4 @@ def test_lod_app():
     req('/pick?uri=http%3A%2F%2Fexample.org%2Fbook%2Fbook1', 302)
     req('/picked/download/nt')
     req('/picked/rdfgraph/png')
+

@@ -5,7 +5,7 @@ import threading
 import os
 import re
 import urllib
-import httplib
+import http.client
 import rdflib
 import rdflib.compare
 import rdflib_web.endpoint
@@ -126,7 +126,7 @@ class TestEndpointProtocol(unittest.TestCase):
         t.start()
         import time
         time.sleep(1)
-        cls.connection = httplib.HTTPConnection(cls.host, cls.port, timeout=5)
+        cls.connection = http.client.HTTPConnection(cls.host, cls.port, timeout=5)
 
     def replace_constants(self, s):
         s = s.replace('$GRAPHSTORE$', self.graphstore_path)

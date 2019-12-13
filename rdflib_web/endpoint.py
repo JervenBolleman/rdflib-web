@@ -35,7 +35,7 @@ import sys
 import time
 import traceback
 
-import mimeutils
+from rdflib_web import mimeutils
 
 from rdflib_web import htmlresults
 from rdflib_web import __version__
